@@ -2,11 +2,15 @@ import emoji, options, json, user, server, channel
 
 type
   Args* = ref object of RootObj
-  Event* = tuple[name: string, handlers: seq[Handler]] # key value pair
-  Handler* = proc (args: Args) {.closure.} # callback function type
 
-type ResponseEvent* = object of Args
+
+type ResponseEvent* = ref object of Args
   `type`*: string
+
+type Event* = ref object
+  name*: string
+  handler*: proc (args: JsonNode)
+
 
 
 type ReadyEvent* = ref object of ResponseEvent
@@ -20,5 +24,19 @@ type UserUpdateEvent* = ref object of ResponseEvent
   data*: JsonNode
   clear*: seq[string]
 
-type RawEvent* = ref object of Args
+type MessageEvent* = ref object of ResponseEvent
+  id*: string
+  nonce*: string
+  channel*: string
+  author*: string
+  content*: string
+
+type RawEvent* = ref object of ResponseEvent
   data*: JsonNode
+
+
+proc `$`*(e: ResponseEvent): string =
+  return e.`type`
+
+proc `$`*(e: Event): string =
+  return e.name

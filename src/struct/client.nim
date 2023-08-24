@@ -1,5 +1,5 @@
 import event, ws, user, emoji, server, channel, json, asyncdispatch, jsony,
-        options, macros
+        options, strformat, strutils
 
 type RevoltClient* = ref object of RootObj
     ws: WebSocket
@@ -11,30 +11,6 @@ type RevoltClient* = ref object of RootObj
     connected*: bool
     events: seq[Event]
 
-macro event*(discord: RevoltClient, fn: untyped): untyped =
-    let
-        eventName = fn[0]
-        params = fn[3]
-        pragmas = fn[4]
-        body = fn[6]
-
-    var anonFn = newTree(
-        nnkLambda,
-        newEmptyNode(),
-        newEmptyNode(),
-        newEmptyNode(),
-        params,
-        pragmas,
-        newEmptyNode(),
-        body
-    )
-
-    if pragmas.findChild(it.strVal == "async").kind == nnkNilLit:
-        anonFn.addPragma ident("async")
-
-    quote:
-        `discord`.events.`eventName` = `anonFn`
-
 proc newRevoltClient*(token: string): RevoltClient =
     let websocket = waitFor newWebSocket(
       "wss://ws.revolt.chat?version=1&format=json")
@@ -43,19 +19,39 @@ proc newRevoltClient*(token: string): RevoltClient =
         users: @[], servers: @[], emojis: @[], channels: @[], connected: false,
           events: @[])
 
+proc addRevoltEvent*(self: RevoltClient, eventName: string, run: proc (
+        args: JsonNode)) =
+    let event = Event(name: eventName, handler: run)
+    self.events.add(event)
+
 proc handleEvent(self: RevoltClient) {.async.} =
     let rawJson = await self.ws.receiveStrPacket()
     if rawJson.len >= 1:
         try:
             let json = rawJson.fromJson()
-            case json["type"].getStr():
-            # TODO handle events
-                of "Authenticated":
-                    break
-                of "Ready":
-                    break
+
+            let eventName = json["type"].getStr()
+
+            # Initialize cache
+            if eventName == "Ready":
+                let event = rawJson.fromJson(ReadyEvent)
+                self.channels = event.channels
+                self.users = event.users
+                self.servers = event.servers
+                if event.emojis.isSome():
+                    self.emojis = event.emojis.get()
+
+            # no fucking reason to continue (might bring back in the future... maybe?)
+            elif eventName == "Authenticated":
+                return
+
+            for _, item in self.events.pairs:
+                if $item == eventName.toLower():
+                    echo fmt"Found event: {$item}"
+                    item.handler(json)
                 else:
-                    break
+                    echo fmt"There was other events omitted '{eventName}'"
+
         except JsonParsingError:
             echo "There was problem parsing, here's raw response\n" & rawJson
 
