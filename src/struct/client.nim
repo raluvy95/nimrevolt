@@ -1,8 +1,9 @@
 import event, ws, user, emoji, server, channel, json, asyncdispatch, jsony,
-        options, strformat, strutils
+        options, strformat, strutils, httpClient
 
 type RevoltClient* = ref object of RootObj
     ws: WebSocket
+    httpClient*: AsyncHttpClient
     token: string
     users*: seq[User]
     servers*: seq[Server]
@@ -14,7 +15,11 @@ type RevoltClient* = ref object of RootObj
 proc newRevoltClient*(token: string): RevoltClient =
     let websocket = waitFor newWebSocket(
       "wss://ws.revolt.chat?version=1&format=json")
+    let header = newHttpHeaders()
+    header.add("x-session-token", token)
     return RevoltClient(ws: websocket,
+        httpClient: newAsyncHttpClient(userAgent = "nimrevolt/0.0.0",
+                headers = header),
         token: token,
         users: @[], servers: @[], emojis: @[], channels: @[], connected: false,
           events: @[])
@@ -46,11 +51,12 @@ proc handleEvent(self: RevoltClient) {.async.} =
                 return
 
             for _, item in self.events.pairs:
-                if $item == eventName.toLower():
+                if $item == eventName.toLower() or $item == "raw":
                     echo fmt"Found event: {$item}"
-                    item.handler(json)
-                else:
-                    echo fmt"There was other events omitted '{eventName}'"
+                    try:
+                        item.handler(json)
+                    except CatchableError as e:
+                        echo fmt"There was error running that event - {e.msg}"
 
         except JsonParsingError:
             echo "There was problem parsing, here's raw response\n" & rawJson

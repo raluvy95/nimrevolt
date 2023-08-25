@@ -2,10 +2,10 @@
 
 version       = "0.0.1"
 author        = "raluvy95"
-description   = "A Revolt API wrapper written in Nim"
+description   = "A Revolt.chat API wrapper written in Nim"
 license       = "MIT"
 srcDir        = "src"
-bin           = @["nimrevolt"]
+bin           = @["test-except-its-example-code"]
 
 # Dependencies
 
