@@ -15,11 +15,12 @@ type RevoltClient* = ref object of RootObj
 proc newRevoltClient*(token: string): RevoltClient =
     let websocket = waitFor newWebSocket(
       "wss://ws.revolt.chat?version=1&format=json")
-    let header = newHttpHeaders()
-    header.add("x-session-token", token)
+    let httpClient = newAsyncHttpClient(userAgent = "nimrevolt/0.0.0")
+    let header = newHttpHeaders({"X-Session-Token": token})
+
+    httpClient.headers = header
     return RevoltClient(ws: websocket,
-        httpClient: newAsyncHttpClient(userAgent = "nimrevolt/0.0.0",
-                headers = header),
+        httpClient: httpClient,
         token: token,
         users: @[], servers: @[], emojis: @[], channels: @[], connected: false,
           events: @[])
