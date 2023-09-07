@@ -8,15 +8,16 @@ when isMainModule:
 
   let bot: RevoltClient = newRevoltClient(getEnv("TOKEN"))
 
-  proc onReady(args: JsonNode) =
+  proc onReady(args: JsonNode) {.async.} =
     echo fmt"I am ready! {bot.users.len} users, {bot.servers.len} servers, {bot.channels.len} channels, {bot.emojis.len} emojis have been cached"
+    await bot.getfromAPI("users/@me")
 
-  proc onMessage(args: JsonNode) =
+  proc onMessage(args: JsonNode) {.async.} =
     let message: MessageEvent = fromJson($args, MessageEvent)
     echo bot.users.len()
     echo "Someone sent a message - " & message.content
 
-  proc onRawEvent(args: JsonNode) =
+  proc onRawEvent(args: JsonNode) {.async.} =
     echo $args
 
   bot.addRevoltEvent("ready", onReady)

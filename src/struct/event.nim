@@ -1,4 +1,4 @@
-import emoji, options, json, user, server, channel
+import emoji, options, json, user, server, channel, asyncdispatch
 
 type
   Args* = ref object of RootObj
@@ -9,7 +9,7 @@ type ResponseEvent* = ref object of Args
 
 type Event* = ref object
   name*: string
-  handler*: proc (args: JsonNode)
+  handler*: proc (args: JsonNode) {.async.}
 
 
 

@@ -10,6 +10,6 @@ proc getUser*(self: RevoltClient, userId: string): User =
 proc getServer*(self: RevoltClient, serverId: string): Server =
     var servers = filter(self.servers, proc(x: Server): bool = x.id == serverId)
     if servers.len < 1:
-        raise UserNotFound(msg: "Cannot find that user")
+        raise ServerNotFound(msg: "Cannot find that server")
     else:
         return servers[0]

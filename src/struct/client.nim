@@ -25,7 +25,7 @@ proc newRevoltClient*(token: string): RevoltClient =
           events: @[])
 
 proc addRevoltEvent*(self: RevoltClient, eventName: string, run: proc (
-        args: JsonNode)) =
+        args: JsonNode) {.async.}) =
     let event = Event(name: eventName, handler: run)
     self.events.add(event)
 
@@ -54,7 +54,7 @@ proc handleEvent(self: RevoltClient) {.async.} =
                 if $item == eventName.toLower() or $item == "raw":
                     echo fmt"Found event: {$item}"
                     try:
-                        item.handler(json)
+                        await item.handler(json)
                     except CatchableError as e:
                         echo fmt"There was error running that event - {e.msg}"
 
