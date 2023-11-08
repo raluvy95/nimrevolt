@@ -30,4 +30,6 @@ type User* = object of RootObj
   relationship*: Option[string]
   online*: Option[bool]
 
+type UserFlags* = object
+  flags: int
 

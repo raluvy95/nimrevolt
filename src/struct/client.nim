@@ -12,11 +12,17 @@ type RevoltClient* = ref object of RootObj
     connected*: bool
     events: seq[Event]
 
-proc newRevoltClient*(token: string): RevoltClient =
+proc newRevoltClient*(token: string, isBot: bool): RevoltClient =
     let websocket = waitFor newWebSocket(
       "wss://ws.revolt.chat?version=1&format=json")
     let httpClient = newAsyncHttpClient(userAgent = "nimrevolt/0.0.0")
-    let header = newHttpHeaders({"X-Session-Token": token})
+    let header = newHttpHeaders(true)
+
+    if isBot == true:
+        header["X-Bot-Token"] = token
+    else:
+        header["X-Session-Token"] = token
+    header["Accept"] = "application/json"
 
     httpClient.headers = header
     return RevoltClient(ws: websocket,
